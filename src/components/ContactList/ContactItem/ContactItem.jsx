@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 
 import styles from './contactItem.module.css';
 
-const ContactItem=({ options, deleteNumbers })=> {
+const ContactItem = ({ options, deleteNumber }) => {
   const [name, number, id] = options;
 
   return (
@@ -11,20 +11,17 @@ const ContactItem=({ options, deleteNumbers })=> {
       <button
         type="button"
         className={styles.btn}
-        onClick={() => deleteNumbers(id)}
+        onClick={() => deleteNumber(id)}
       >
         Delete
       </button>
     </li>
   );
-}
-
+};
 
 export default ContactItem;
 
-
 ContactItem.propTypes = {
   options: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-  deleteNumbers: PropTypes.func.isRequired,
+  deleteNumber: PropTypes.func.isRequired,
 };
-

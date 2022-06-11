@@ -1,98 +1,82 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { nanoid } from 'nanoid';
+import { useState, useCallback, useEffect } from 'react';
+import { useSelector, shallowEqual, useDispatch } from 'react-redux';
 
 import Form from './Form';
 import ContactList from './ContactList/ContactList';
 import Filter from './Filter';
 
+import { getContacts, getLoading, getError } from 'redux/contacts/selector';
+
+import * as operations from 'redux/contacts/operations';
+
 import styles from './myNumbers.module.css';
 
 const MyNumbers = () => {
-  const [contacts, setContacts] = useState([
-    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-  ]);
+  const contacts = useSelector(getContacts, shallowEqual);
+
+  const isLoading = useSelector(getLoading, shallowEqual);
+
+  const error = useSelector(getError, shallowEqual);
+
+  const dispatch = useDispatch();
 
   const [filter, setFilter] = useState('');
 
-  const firstRender = useRef(true);
-
   useEffect(() => {
-    if (!firstRender.current) {
-      localStorage.setItem('contacts', JSON.stringify(contacts));
-    }
-  }, [contacts]);
+    dispatch(operations.getContacts());
+  }, [dispatch]);
 
-  useEffect(() => {
-    if (firstRender.current) {
-      const data = localStorage.getItem('contacts');
-      const result = JSON.parse(data);
-      if (result?.length) {
-        setContacts(result);
-      }
-      firstRender.current = data;
-    }
-  }, []);
+  const addContacts = useCallback(
+    data => {
+      return dispatch(operations.addContact(data));
+    },
+    [dispatch]
+  );
 
-  const addContact = newContact => {
-    const duplicate = contacts.find(
-      contact => contact.name === newContact.name
-    );
-    if (duplicate) {
-      alert(`${newContact.name} уже есть в списке контактов`);
-      return;
-    }
-
-    setContacts(prevState => {
-      const { name, number } = newContact;
-      const contact = {
-        id: nanoid(),
-        name,
-        number,
-      };
-      return [...prevState, contact];
-    });
-  };
-
-  const deleteContact = contactId => {
-    setContacts(prevState =>
-      prevState.filter(contact => contact.id !== contactId)
-    );
-  };
+  const deleteNumber = useCallback(
+    id => {
+      return dispatch(operations.removeContact(id));
+    },
+    [dispatch]
+  );
 
   const changeFilter = useCallback(
     e => {
-      setFilter(e.currentTarget.value);
+      setFilter(e.target.value);
     },
     [setFilter]
   );
 
-  const getFilterContacts = () => {
+  const getFilteredContacts = () => {
     if (!filter) {
       return contacts;
     }
-    const filterContact = filter.toLowerCase();
-    const filteredContact = contacts.filter(({ name }) => {
-      const result = name.toLowerCase().includes(filterContact);
-      return result;
+    const filterRequest = filter.toLowerCase();
+    const filteredContacts = contacts.filter(({ name }) => {
+      const res = name.toLowerCase().includes(filterRequest);
+      return res;
     });
-    return filteredContact;
-  };
 
-  const filterContact = getFilterContacts();
+    return filteredContacts;
+  };
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Phonebook</h1>
-      <Form onSubmit={addContact} />
+      <Form onSubmit={addContacts} />
 
       <h2 className={styles.title}>Contacts</h2>
 
       <Filter onChange={changeFilter} filter={filter} />
 
-      <ContactList contacts={filterContact} deleteNumber={deleteContact} />
+      {error && <div className={styles.error}>{error}</div>}
+
+      {isLoading && <div className={styles.loading}>Loading...</div>}
+
+      <ContactList
+        contacts={getFilteredContacts()}
+        deleteNumber={deleteNumber}
+      />
     </div>
   );
 };
